@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { makeSlug } from "@/lib/slug";
-import { compressAndUploadPhoto } from "@/lib/upload";
+import { compressAndUploadPhoto, deleteShoot } from "@/lib/upload";
 import { Button, Card, ErrorText, FieldLabel, Input, Logo } from "@/components/ui";
 
 const ADMIN_EMAIL = "hamzah77@outlook.com";
@@ -160,6 +160,11 @@ function AdminDashboard() {
                       >
                         {selectedShootId === s.id ? "Close" : "Upload photos"}
                       </Button>
+                      <DeleteShootButton
+                        shootId={s.id}
+                        clientName={s.client_name}
+                        onDeleted={loadShoots}
+                      />
                     </div>
                   </div>
                   {selectedShoot?.id === s.id && (
@@ -188,6 +193,44 @@ function CopyLinkButton({ slug }: { slug: string }) {
   return (
     <Button variant="secondary" onClick={handleCopy}>
       {copied ? "Copied!" : "Copy link"}
+    </Button>
+  );
+}
+
+function DeleteShootButton({
+  shootId,
+  clientName,
+  onDeleted,
+}: {
+  shootId: string;
+  clientName: string;
+  onDeleted: () => void;
+}) {
+  const [deleting, setDeleting] = useState(false);
+
+  async function handleDelete() {
+    const confirmed = window.confirm(
+      `Delete the shoot for "${clientName}"? This removes all of its photos and edits permanently.`,
+    );
+    if (!confirmed) return;
+    setDeleting(true);
+    try {
+      await deleteShoot(shootId);
+      onDeleted();
+    } catch {
+      window.alert("Could not delete shoot, please try again.");
+      setDeleting(false);
+    }
+  }
+
+  return (
+    <Button
+      variant="ghost"
+      className="text-red-600 hover:bg-red-50 hover:text-red-700"
+      onClick={handleDelete}
+      disabled={deleting}
+    >
+      {deleting ? "Deleting..." : "Delete"}
     </Button>
   );
 }

@@ -50,3 +50,24 @@ export function publicPhotoUrl(storagePath: string): string {
   return supabase.storage.from("shoot-photos").getPublicUrl(storagePath).data
     .publicUrl;
 }
+
+export async function deleteShoot(shootId: string) {
+  const { data: files, error: listError } = await supabase.storage
+    .from("shoot-photos")
+    .list(shootId);
+  if (listError) throw listError;
+
+  if (files && files.length > 0) {
+    const paths = files.map((f) => `${shootId}/${f.name}`);
+    const { error: removeError } = await supabase.storage
+      .from("shoot-photos")
+      .remove(paths);
+    if (removeError) throw removeError;
+  }
+
+  const { error: deleteError } = await supabase
+    .from("shoots")
+    .delete()
+    .eq("id", shootId);
+  if (deleteError) throw deleteError;
+}
