@@ -10,6 +10,12 @@ import { useUnlockedShoot, setCachedUnlock } from "@/lib/useUnlockedShoot";
 import { PasscodeForm } from "@/components/PasscodeForm";
 import { DEFAULT_EDIT } from "@/lib/types";
 import type { Photo, UnlockedShoot } from "@/lib/types";
+import {
+  cropFractionToPixels,
+  downloadFilename,
+  getCroppedImageBlob,
+  triggerDownload,
+} from "@/lib/cropImage";
 import { Button } from "@/components/ui";
 
 export default function EditPage() {
@@ -55,6 +61,7 @@ function EditContent() {
 function PhotoView({ data, photoId }: { data: UnlockedShoot; photoId: string }) {
   const router = useRouter();
   const [mode, setMode] = useState<"view" | "crop">("view");
+  const [downloading, setDownloading] = useState(false);
 
   const photo = data.photos.find((p) => p.id === photoId)!;
   const index = data.photos.findIndex((p) => p.id === photoId);
@@ -91,6 +98,27 @@ function PhotoView({ data, photoId }: { data: UnlockedShoot; photoId: string }) 
       p.id === photo.id ? { ...p, edit } : p,
     );
     setCachedUnlock(data.shoot.slug, { ...data, photos: updatedPhotos });
+  }
+
+  async function handleDownload() {
+    setDownloading(true);
+    try {
+      const edit = photo.edit ?? DEFAULT_EDIT;
+      const pixelArea = cropFractionToPixels(
+        edit,
+        photo.width,
+        photo.height,
+        edit.rotation,
+      );
+      const blob = await getCroppedImageBlob(
+        publicPhotoUrl(photo.storage_path),
+        pixelArea,
+        edit.rotation,
+      );
+      triggerDownload(blob, downloadFilename(photo.original_filename));
+    } finally {
+      setDownloading(false);
+    }
   }
 
   const mailtoHref = `mailto:${encodeURIComponent(
@@ -168,6 +196,14 @@ function PhotoView({ data, photoId }: { data: UnlockedShoot; photoId: string }) 
           >
             Request full-res
           </a>
+          <Button
+            variant="secondary"
+            className="border-neutral-700 bg-neutral-800 text-white hover:bg-neutral-700"
+            onClick={handleDownload}
+            disabled={downloading}
+          >
+            {downloading ? "Preparing..." : "Download"}
+          </Button>
           <Button onClick={() => setMode("crop")}>Edit / Crop</Button>
         </div>
       </div>
@@ -193,33 +229,50 @@ function CropEditor({
   const [crop, setCrop] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState(existingEdit.rotation);
-  const [croppedArea, setCroppedArea] = useState<Area>({
+  const [cropPercent, setCropPercent] = useState<Area>({
     x: existingEdit.crop_x * 100,
     y: existingEdit.crop_y * 100,
     width: existingEdit.crop_w * 100,
     height: existingEdit.crop_h * 100,
   });
+  const [cropPixels, setCropPixels] = useState<Area | null>(null);
   const [saving, setSaving] = useState(false);
 
   async function handleSave() {
     setSaving(true);
     const newEdit = {
-      crop_x: croppedArea.x / 100,
-      crop_y: croppedArea.y / 100,
-      crop_w: croppedArea.width / 100,
-      crop_h: croppedArea.height / 100,
+      crop_x: cropPercent.x / 100,
+      crop_y: cropPercent.y / 100,
+      crop_w: cropPercent.width / 100,
+      crop_h: cropPercent.height / 100,
       rotation,
       is_favorite: isFavorite,
     };
     const { error } = await supabase
       .from("photo_edits")
       .upsert({ photo_id: photo.id, ...newEdit }, { onConflict: "photo_id" });
-    setSaving(false);
-    if (error) return;
+    if (error) {
+      setSaving(false);
+      return;
+    }
     const updatedPhotos = data.photos.map((p) =>
       p.id === photo.id ? { ...p, edit: newEdit } : p,
     );
     setCachedUnlock(data.shoot.slug, { ...data, photos: updatedPhotos });
+
+    if (cropPixels) {
+      try {
+        const blob = await getCroppedImageBlob(
+          publicPhotoUrl(photo.storage_path),
+          cropPixels,
+          rotation,
+        );
+        triggerDownload(blob, downloadFilename(photo.original_filename));
+      } catch {
+        // saving the edit still succeeded even if the export failed
+      }
+    }
+    setSaving(false);
     onDone();
   }
 
@@ -250,9 +303,10 @@ function CropEditor({
           aspect={undefined}
           onCropChange={setCrop}
           onZoomChange={setZoom}
-          onCropComplete={(_croppedArea, areaPixels) =>
-            setCroppedArea(areaPixels)
-          }
+          onCropComplete={(percentArea, pixelArea) => {
+            setCropPercent(percentArea);
+            setCropPixels(pixelArea);
+          }}
         />
       </div>
 
@@ -265,7 +319,7 @@ function CropEditor({
           ⟳ Rotate
         </Button>
         <Button onClick={handleSave} disabled={saving}>
-          {saving ? "Saving..." : "Save"}
+          {saving ? "Saving..." : "Save & download"}
         </Button>
       </div>
     </main>
