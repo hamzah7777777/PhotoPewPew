@@ -79,26 +79,28 @@ begin
       'client_name', v_shoot.client_name,
       'admin_email', v_shoot.admin_email
     ),
-    'photos', coalesce(jsonb_agg(jsonb_build_object(
-      'id', p.id,
-      'storage_path', p.storage_path,
-      'width', p.width,
-      'height', p.height,
-      'sort_order', p.sort_order,
-      'original_filename', p.original_filename,
-      'edit', (
-        select jsonb_build_object(
-          'crop_x', pe.crop_x, 'crop_y', pe.crop_y,
-          'crop_w', pe.crop_w, 'crop_h', pe.crop_h,
-          'rotation', pe.rotation, 'is_favorite', pe.is_favorite
+    'photos', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'id', p.id,
+        'storage_path', p.storage_path,
+        'width', p.width,
+        'height', p.height,
+        'sort_order', p.sort_order,
+        'original_filename', p.original_filename,
+        'edit', (
+          select jsonb_build_object(
+            'crop_x', pe.crop_x, 'crop_y', pe.crop_y,
+            'crop_w', pe.crop_w, 'crop_h', pe.crop_h,
+            'rotation', pe.rotation, 'is_favorite', pe.is_favorite
+          )
+          from photo_edits pe where pe.photo_id = p.id
         )
-        from photo_edits pe where pe.photo_id = p.id
-      )
-    ) order by p.sort_order), '[]'::jsonb)
+      ) order by p.sort_order)
+      from photos p
+      where p.shoot_id = v_shoot.id
+    ), '[]'::jsonb)
   )
-  into v_result
-  from photos p
-  where p.shoot_id = v_shoot.id;
+  into v_result;
 
   return v_result;
 end;
