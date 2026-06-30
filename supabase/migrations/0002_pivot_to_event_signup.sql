@@ -5,8 +5,10 @@ drop function if exists unlock_shoot(text, text);
 drop table if exists photo_edits;
 drop table if exists photos;
 drop table if exists shoots;
-delete from storage.objects where bucket_id = 'shoot-photos';
-delete from storage.buckets where id = 'shoot-photos';
+-- Note: the 'shoot-photos' storage bucket itself is left in place — Supabase
+-- blocks deleting storage objects/buckets via raw SQL. To remove it, go to
+-- Storage in the Supabase dashboard and delete the 'shoot-photos' bucket
+-- there (optional cleanup, doesn't affect the new schema below).
 
 create table events (
   id uuid primary key default gen_random_uuid(),
