@@ -1,15 +1,15 @@
-# PhotoPewPew
+# HSBC 8CS Toastmasters — Event Email Sign-up
 
-A small client-gallery tool for photo shoots. Upload compressed (~250KB) previews for a shoot, send the client a link + passcode, and they can browse, crop/rotate, mark favorites, and request the full-res version of a photo by email. Originals never leave your machine.
+A QR-code email sign-up tool for HSBC 8CS London Toastmasters Club events. Project a QR code on the big screen, attendees scan it on their phones and submit their email, and afterward you export the list as a `.txt` file (one email per line).
 
-Fully static (Next.js `output: "export"`) deployed to GitHub Pages — all data lives in Supabase (Postgres + Storage + Auth), no server.
+Fully static (Next.js `output: "export"`) deployed to GitHub Pages — all data lives in Supabase (Postgres + Auth), no server.
 
 ## One-time setup
 
 ### 1. Supabase project
 1. Create a project at [supabase.com](https://supabase.com) (or use an existing one).
-2. Open the SQL editor and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
-3. Under **Authentication → Users**, manually create the one admin user (you) with an email + password. This is the only login the app supports — it's for `/admin/` only, clients never sign in.
+2. Open the SQL editor and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), then [`supabase/migrations/0002_pivot_to_event_signup.sql`](supabase/migrations/0002_pivot_to_event_signup.sql) (the second one drops the old photo-gallery schema this project started as, and creates the `events`/`signups` tables used today).
+3. Under **Authentication → Users**, manually create the one admin user (you) with an email + password. This is the only login the app supports — it's for `/admin/` only, attendees never sign in.
 4. Under **Project Settings → API**, copy the **Project URL** and **anon public key**.
 
 ### 2. Local environment
@@ -27,7 +27,7 @@ npm install
 npm run dev
 ```
 
-The anon key is meant to be public (it ships in the static bundle); access control is enforced by Supabase Row Level Security and the `unlock_shoot` RPC, not by hiding the key.
+The anon key is meant to be public (it ships in the static bundle); access control is enforced by Supabase Row Level Security — anyone can submit a signup, but only the signed-in admin can read or export them.
 
 ### 3. GitHub Pages deploy
 1. In the repo's **Settings → Secrets and variables → Actions**, add `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` as repository secrets (same values as `.env.local`).
@@ -37,9 +37,10 @@ The anon key is meant to be public (it ships in the static bundle); access contr
 
 ## Using it
 
-- **Admin**: go to `/admin/`, sign in, create a shoot (title, client name, passcode, your email), then upload photos for it — they're compressed to ~250KB in the browser before upload. Copy the client link shown next to each shoot (`/gallery/?slug=...`) and send it with the passcode.
-- **Client**: opens the link, enters the passcode, browses the grid, taps a photo to crop/rotate/favorite it, and can hit "Request full-res" to open an email to you with the shoot and filename pre-filled.
+- **Admin**: go to `/admin/`, sign in, create an event (just a name, e.g. "9 July 2026 Meeting"). Each event gets its own QR code and email list.
+- **At the event**: click **Display QR** on the event to open `/display/?event=...` in a new tab — put that on the projector. Attendees scan it, land on `/join/?event=...`, and submit their email. Scanning twice is harmless — duplicates are quietly treated as "already joined."
+- **After the event**: click **Export emails (.txt)** to download every collected email for that event, one per line.
 
 ## Notes
-- The shoot passcode is a soft gate (plain text, checked via a Postgres RPC) — good enough to keep a gallery from being stumbled on, not a hard security boundary.
-- Only compressed previews are ever stored in Supabase; full-resolution originals stay on your machine and are sent manually when a client emails you.
+- No passcode or login is needed to submit an email — the QR/join link itself is the only gate, same trust level the photo-gallery passcode used to have.
+- `events` are publicly readable (needed so the display/join pages can resolve a link without logging in) but only the admin can create, edit, or delete them. `signups` can be inserted by anyone but only read or deleted by the admin, so attendees can't see each other's emails.

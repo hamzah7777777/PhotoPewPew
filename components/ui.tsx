@@ -99,10 +99,15 @@ export function ErrorText({ children }: { children: React.ReactNode }) {
   return <p className="text-sm text-red-600">{children}</p>;
 }
 
-export function Logo() {
+export function Brand({ size = "sm" }: { size?: "sm" | "lg" }) {
   return (
-    <span className="text-sm font-semibold tracking-tight text-neutral-900">
-      Photo<span className="text-neutral-400">PewPew</span>
+    <span
+      className={cx(
+        "font-semibold tracking-tight text-neutral-900",
+        size === "sm" ? "text-sm" : "text-2xl",
+      )}
+    >
+      HSBC 8CS <span className="text-blue-900">Toastmasters</span>
     </span>
   );
 }

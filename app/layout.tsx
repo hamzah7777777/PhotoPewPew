@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PhotoPewPew",
-  description: "View, crop, and select your photos from your shoot.",
+  title: "HSBC 8CS Toastmasters",
+  description: "Scan the QR code at our event to join our mailing list.",
 };
 
 export default function RootLayout({
