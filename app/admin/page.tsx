@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { makeSlug } from "@/lib/slug";
 import { downloadTextFile } from "@/lib/download";
 import { THEMES, type ThemeId } from "@/lib/themes";
+import { compressImage } from "@/lib/image";
 import {
   Brand,
   Button,
@@ -24,6 +25,7 @@ type EventRow = {
 };
 
 const BACKGROUNDS_BUCKET = "event-backgrounds";
+const MAX_BACKGROUND_BYTES = 5 * 1024 * 1024;
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -184,16 +186,21 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
 
     let background_url = "";
     if (background) {
-      if (background.size > 5 * 1024 * 1024) {
-        setError("Background image must be 5 MB or smaller.");
+      let upload: File;
+      try {
+        upload = await compressImage(background, MAX_BACKGROUND_BYTES);
+      } catch {
+        setError(
+          "Could not process that image — please try a different file.",
+        );
         setSubmitting(false);
         return;
       }
-      const ext = background.name.split(".").pop()?.toLowerCase() || "png";
+      const ext = upload.name.split(".").pop()?.toLowerCase() || "jpg";
       const path = `${makeSlug(name)}-${Date.now()}.${ext}`;
       const { error: uploadError } = await supabase.storage
         .from(BACKGROUNDS_BUCKET)
-        .upload(path, background);
+        .upload(path, upload);
       if (uploadError) {
         setError(`Could not upload background image: ${uploadError.message}`);
         setSubmitting(false);

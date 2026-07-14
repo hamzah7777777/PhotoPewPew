@@ -37,7 +37,7 @@ The anon key is meant to be public (it ships in the static bundle); access contr
 
 ## Using it
 
-- **Admin**: go to `/admin/`, sign in, create a QR code — pick a title (e.g. "9 July 2026 Meeting"), an optional subtitle, the sub text shown under the QR code, an optional background image (max 5 MB, shown behind the QR code on the display page), and one of four colour themes (Classic, Midnight, Sunset, Forest). Each event gets its own QR code and email list.
+- **Admin**: go to `/admin/`, sign in, create a QR code — pick a title (e.g. "9 July 2026 Meeting"), an optional subtitle, the sub text shown under the QR code, an optional background image (shown behind the QR code on the display page; images over 5 MB are automatically compressed in the browser before upload), and one of four colour themes (Classic, Midnight, Sunset, Forest). Each event gets its own QR code and email list.
 - **At the event**: click **Display QR** on the event to open `/display/?event=...` in a new tab — put that on the projector. Attendees scan it, land on `/join/?event=...`, and submit their email. Scanning twice is harmless — duplicates are quietly treated as "already joined."
 - **After the event**: click **Export emails (.txt)** to download every collected email for that event, one per line.
 
