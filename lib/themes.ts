@@ -1,4 +1,13 @@
-export type ThemeId = "classic" | "midnight" | "sunset" | "forest";
+export type ThemeId =
+  | "classic"
+  | "midnight"
+  | "sunset"
+  | "forest"
+  | "paper"
+  | "ink"
+  | "clay"
+  | "sage"
+  | "social";
 
 export type Theme = {
   id: ThemeId;
@@ -70,6 +79,77 @@ export const THEMES: Theme[] = [
     qrFg: "#022c22",
     qrBg: "#ffffff",
     accent: "text-emerald-700",
+  },
+  {
+    // Warm ivory paper with ink type and a muted brick accent — editorial.
+    id: "paper",
+    label: "Paper",
+    swatch: "bg-[#f1ead9]",
+    page: "bg-[#f1ead9]",
+    title: "text-[#2b2721]",
+    subtitle: "text-[#6f6656]",
+    subtext: "text-[#413b31]",
+    qrCard: "bg-white shadow-md shadow-[#ddd2bc]",
+    qrFg: "#2b2721",
+    qrBg: "#ffffff",
+    accent: "text-[#9a3b2c]",
+  },
+  {
+    // Deep slate-navy (not pure black) with warm off-white and brass accent.
+    id: "ink",
+    label: "Ink",
+    swatch: "bg-[#1b2231]",
+    page: "bg-[#1b2231]",
+    title: "text-[#f2efe7]",
+    subtitle: "text-[#98a0af]",
+    subtext: "text-[#c9cdd6]",
+    qrCard: "bg-white shadow-2xl",
+    qrFg: "#1b2231",
+    qrBg: "#ffffff",
+    accent: "text-[#c6a15b]",
+  },
+  {
+    // Earthy terracotta / putty — warm and muted, no gradient.
+    id: "clay",
+    label: "Clay",
+    swatch: "bg-[#c07a5b]",
+    page: "bg-[#e7d7c8]",
+    title: "text-[#48291d]",
+    subtitle: "text-[#8a6553]",
+    subtext: "text-[#5e3b2c]",
+    qrCard: "bg-white shadow-lg shadow-[#d2b6a2]",
+    qrFg: "#48291d",
+    qrBg: "#ffffff",
+    accent: "text-[#a24b32]",
+  },
+  {
+    // Calm desaturated sage — soft green-grey, restrained.
+    id: "sage",
+    label: "Sage",
+    swatch: "bg-[#8b9a80]",
+    page: "bg-[#dee3d6]",
+    title: "text-[#2c3327]",
+    subtitle: "text-[#6a7160]",
+    subtext: "text-[#434b3b]",
+    qrCard: "bg-white shadow-lg shadow-[#c3ccb6]",
+    qrFg: "#2c3327",
+    qrBg: "#ffffff",
+    accent: "text-[#586b4c]",
+  },
+  {
+    // Renders the display page as a social-media post (see SocialPost in
+    // app/display/page.tsx). Tokens below are used by the join page.
+    id: "social",
+    label: "Social",
+    swatch: "bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600",
+    page: "bg-[#fafafa]",
+    title: "text-neutral-900",
+    subtitle: "text-neutral-500",
+    subtext: "text-neutral-700",
+    qrCard: "border border-neutral-200 bg-white shadow-sm",
+    qrFg: "#171717",
+    qrBg: "#ffffff",
+    accent: "text-rose-500",
   },
 ];
 

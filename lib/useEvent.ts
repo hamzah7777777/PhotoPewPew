@@ -13,7 +13,7 @@ export function useEvent(slug: string) {
     supabase
       .from("events")
       .select(
-        "id, slug, name, subtitle, subtext, theme, background_url, created_at",
+        "id, slug, name, subtitle, subtext, theme, background_url, poster_name, location, likes, avatar_url, created_at",
       )
       .eq("slug", slug)
       .maybeSingle()
