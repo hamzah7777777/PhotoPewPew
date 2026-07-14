@@ -6,7 +6,8 @@ export type ThemeId =
   | "paper"
   | "ink"
   | "clay"
-  | "sage";
+  | "sage"
+  | "social";
 
 export type Theme = {
   id: ThemeId;
@@ -134,6 +135,21 @@ export const THEMES: Theme[] = [
     qrFg: "#2c3327",
     qrBg: "#ffffff",
     accent: "text-[#586b4c]",
+  },
+  {
+    // Renders the display page as a social-media post (see SocialPost in
+    // app/display/page.tsx). Tokens below are used by the join page.
+    id: "social",
+    label: "Social",
+    swatch: "bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600",
+    page: "bg-[#fafafa]",
+    title: "text-neutral-900",
+    subtitle: "text-neutral-500",
+    subtext: "text-neutral-700",
+    qrCard: "border border-neutral-200 bg-white shadow-sm",
+    qrFg: "#171717",
+    qrBg: "#ffffff",
+    accent: "text-rose-500",
   },
 ];
 
