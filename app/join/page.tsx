@@ -4,7 +4,9 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { useEvent } from "@/lib/useEvent";
-import { CLUB } from "@/lib/club";
+import { getTheme } from "@/lib/themes";
+import { SITE_NAME } from "@/lib/site";
+import type { Event } from "@/lib/types";
 import { Button, Card, ErrorText, FieldLabel, Input } from "@/components/ui";
 
 export default function JoinPage() {
@@ -22,17 +24,29 @@ function JoinContent() {
 
   if (event === undefined) return null;
 
+  const theme = getTheme(event?.theme);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center p-6">
+    <main
+      className={`flex flex-1 flex-col items-center justify-center p-6 ${theme.page}`}
+    >
       <Card className="w-full max-w-md">
         <div className="flex flex-col items-center gap-1 border-b border-neutral-100 pb-5 text-center">
-          <p className="text-xs font-semibold uppercase tracking-wider text-blue-900">
-            Toastmasters International
+          <p
+            className={`text-xs font-semibold uppercase tracking-wider ${theme.accent}`}
+          >
+            {SITE_NAME}
           </p>
-          <p className="text-lg font-semibold text-neutral-900">{CLUB.name}</p>
-          <p className="text-xs text-neutral-400">
-            Club {CLUB.clubNumber} &middot; Area {CLUB.area}
-          </p>
+          {event && (
+            <>
+              <p className="text-lg font-semibold text-neutral-900">
+                {event.name}
+              </p>
+              {event.subtitle && (
+                <p className="text-xs text-neutral-400">{event.subtitle}</p>
+              )}
+            </>
+          )}
         </div>
 
         {event === null ? (
@@ -40,27 +54,14 @@ function JoinContent() {
             This sign-up link isn&apos;t valid. Please check with your host.
           </p>
         ) : (
-          <SignupForm eventId={event.id} eventName={event.name} />
+          <SignupForm event={event} />
         )}
-
-        <div className="mt-6 border-t border-neutral-100 pt-4 text-center text-xs text-neutral-400">
-          <p>{CLUB.meetingTimes}</p>
-          {CLUB.addressLines.map((line) => (
-            <p key={line}>{line}</p>
-          ))}
-        </div>
       </Card>
     </main>
   );
 }
 
-function SignupForm({
-  eventId,
-  eventName,
-}: {
-  eventId: string;
-  eventName: string;
-}) {
+function SignupForm({ event }: { event: Event }) {
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -72,7 +73,7 @@ function SignupForm({
     setError(null);
     const { error } = await supabase
       .from("signups")
-      .insert({ event_id: eventId, email: email.trim().toLowerCase() });
+      .insert({ event_id: event.id, email: email.trim().toLowerCase() });
     setSubmitting(false);
     if (error) {
       if (error.code === "23505") {
@@ -90,10 +91,12 @@ function SignupForm({
       <div className="flex flex-col items-center gap-2 pt-6 text-center">
         <span className="text-3xl">✓</span>
         <p className="font-medium text-neutral-900">
-          {status === "joined" ? "You're on the list!" : "You're already on the list!"}
+          {status === "joined"
+            ? "You're on the list!"
+            : "You're already on the list!"}
         </p>
         <p className="text-sm text-neutral-500">
-          Thanks for visiting {eventName}. We&apos;ll keep you posted.
+          Thanks for visiting {event.name}. We&apos;ll keep you posted.
         </p>
       </div>
     );
@@ -102,8 +105,7 @@ function SignupForm({
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4 pt-5">
       <p className="text-sm text-neutral-500">
-        Thanks for visiting! Leave your email below to stay in touch with{" "}
-        {CLUB.name}.
+        Thanks for visiting! Leave your email below to stay in touch.
       </p>
       <div className="flex flex-col gap-1.5">
         <FieldLabel>Email address</FieldLabel>

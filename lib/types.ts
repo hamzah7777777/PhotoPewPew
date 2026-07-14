@@ -2,6 +2,10 @@ export type Event = {
   id: string;
   slug: string;
   name: string;
+  subtitle: string;
+  subtext: string;
+  theme: string;
+  background_url: string;
   created_at: string;
 };
 
