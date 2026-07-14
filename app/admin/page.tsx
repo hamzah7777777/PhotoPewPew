@@ -26,6 +26,7 @@ type EventRow = {
 
 const BACKGROUNDS_BUCKET = "event-backgrounds";
 const MAX_BACKGROUND_BYTES = 5 * 1024 * 1024;
+const ALLOWED_BACKGROUND_TYPES = ["image/png", "image/jpeg"];
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -262,13 +263,25 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
           />
         </div>
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>Background image (optional, shown behind the QR code)</FieldLabel>
+          <FieldLabel>
+            Background image (optional PNG or JPG, shown behind the QR code)
+          </FieldLabel>
           <Input
             key={fileInputKey}
             type="file"
-            accept="image/*"
+            accept="image/png,image/jpeg"
             className="file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-neutral-700"
-            onChange={(e) => setBackground(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              const file = e.target.files?.[0] ?? null;
+              if (file && !ALLOWED_BACKGROUND_TYPES.includes(file.type)) {
+                setError("Background image must be a PNG or JPG file.");
+                setBackground(null);
+                setFileInputKey((k) => k + 1);
+                return;
+              }
+              setError(null);
+              setBackground(file);
+            }}
           />
         </div>
         <div className="flex flex-col gap-1.5">

@@ -5,9 +5,9 @@
 alter table events
   add column background_url text not null default '';
 
--- Public bucket holding the uploaded background images.
-insert into storage.buckets (id, name, public)
-values ('event-backgrounds', 'event-backgrounds', true)
+-- Public bucket holding the uploaded background images (PNG/JPEG only).
+insert into storage.buckets (id, name, public, allowed_mime_types)
+values ('event-backgrounds', 'event-backgrounds', true, array['image/png', 'image/jpeg'])
 on conflict (id) do nothing;
 
 -- Only the admin can upload or delete backgrounds; anyone can view them
