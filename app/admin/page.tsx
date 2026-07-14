@@ -19,8 +19,11 @@ type EventRow = {
   id: string;
   slug: string;
   name: string;
+  background_url: string;
   created_at: string;
 };
+
+const BACKGROUNDS_BUCKET = "event-backgrounds";
 
 export default function AdminPage() {
   const [session, setSession] = useState<Session | null>(null);
@@ -103,7 +106,7 @@ function AdminDashboard() {
   async function loadEvents() {
     const { data } = await supabase
       .from("events")
-      .select("id, slug, name, created_at")
+      .select("id, slug, name, background_url, created_at")
       .order("created_at", { ascending: false });
     const list = data ?? [];
     setEvents(list);
@@ -169,6 +172,8 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
   const [subtitle, setSubtitle] = useState("");
   const [subtext, setSubtext] = useState(DEFAULT_SUBTEXT);
   const [theme, setTheme] = useState<ThemeId>("classic");
+  const [background, setBackground] = useState<File | null>(null);
+  const [fileInputKey, setFileInputKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -176,12 +181,36 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
+
+    let background_url = "";
+    if (background) {
+      if (background.size > 5 * 1024 * 1024) {
+        setError("Background image must be 5 MB or smaller.");
+        setSubmitting(false);
+        return;
+      }
+      const ext = background.name.split(".").pop()?.toLowerCase() || "png";
+      const path = `${makeSlug(name)}-${Date.now()}.${ext}`;
+      const { error: uploadError } = await supabase.storage
+        .from(BACKGROUNDS_BUCKET)
+        .upload(path, background);
+      if (uploadError) {
+        setError(`Could not upload background image: ${uploadError.message}`);
+        setSubmitting(false);
+        return;
+      }
+      background_url = supabase.storage
+        .from(BACKGROUNDS_BUCKET)
+        .getPublicUrl(path).data.publicUrl;
+    }
+
     const { error } = await supabase.from("events").insert({
       slug: makeSlug(name),
       name,
       subtitle: subtitle.trim(),
       subtext: subtext.trim(),
       theme,
+      background_url,
     });
     if (error) {
       setError(error.message);
@@ -190,6 +219,8 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
       setSubtitle("");
       setSubtext(DEFAULT_SUBTEXT);
       setTheme("classic");
+      setBackground(null);
+      setFileInputKey((k) => k + 1);
       onCreated();
     }
     setSubmitting(false);
@@ -221,6 +252,16 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
           <Input
             value={subtext}
             onChange={(e) => setSubtext(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Background image (optional, shown behind the QR code)</FieldLabel>
+          <Input
+            key={fileInputKey}
+            type="file"
+            accept="image/*"
+            className="file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-neutral-700"
+            onChange={(e) => setBackground(e.target.files?.[0] ?? null)}
           />
         </div>
         <div className="flex flex-col gap-1.5">
@@ -303,6 +344,14 @@ function EventCard({
       window.alert("Could not delete event, please try again.");
       setDeleting(false);
       return;
+    }
+    // Best-effort cleanup of the uploaded background image, if any.
+    const marker = `/${BACKGROUNDS_BUCKET}/`;
+    const markerIndex = event.background_url.indexOf(marker);
+    if (markerIndex !== -1) {
+      await supabase.storage
+        .from(BACKGROUNDS_BUCKET)
+        .remove([event.background_url.slice(markerIndex + marker.length)]);
     }
     onDeleted();
   }

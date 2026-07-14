@@ -8,7 +8,7 @@ Fully static (Next.js `output: "export"`) deployed to GitHub Pages — all data 
 
 ### 1. Supabase project
 1. Create a project at [supabase.com](https://supabase.com) (or use an existing one).
-2. Open the SQL editor and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), then [`supabase/migrations/0002_pivot_to_event_signup.sql`](supabase/migrations/0002_pivot_to_event_signup.sql) (the second one drops the old photo-gallery schema this project started as, and creates the `events`/`signups` tables used today), then [`supabase/migrations/0003_event_display_options.sql`](supabase/migrations/0003_event_display_options.sql) (adds the per-event subtitle, sub text, and theme columns).
+2. Open the SQL editor and run [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql), then [`supabase/migrations/0002_pivot_to_event_signup.sql`](supabase/migrations/0002_pivot_to_event_signup.sql) (the second one drops the old photo-gallery schema this project started as, and creates the `events`/`signups` tables used today), then [`supabase/migrations/0003_event_display_options.sql`](supabase/migrations/0003_event_display_options.sql) (adds the per-event subtitle, sub text, and theme columns), then [`supabase/migrations/0004_event_background_image.sql`](supabase/migrations/0004_event_background_image.sql) (adds the optional background image column and its storage bucket).
 3. Under **Authentication → Users**, manually create the one admin user (you) with an email + password. This is the only login the app supports — it's for `/admin/` only, attendees never sign in.
 4. Under **Project Settings → API**, copy the **Project URL** and **anon public key**.
 
@@ -37,7 +37,7 @@ The anon key is meant to be public (it ships in the static bundle); access contr
 
 ## Using it
 
-- **Admin**: go to `/admin/`, sign in, create a QR code — pick a title (e.g. "9 July 2026 Meeting"), an optional subtitle, the sub text shown under the QR code, and one of four colour themes (Classic, Midnight, Sunset, Forest). Each event gets its own QR code and email list.
+- **Admin**: go to `/admin/`, sign in, create a QR code — pick a title (e.g. "9 July 2026 Meeting"), an optional subtitle, the sub text shown under the QR code, an optional background image (max 5 MB, shown behind the QR code on the display page), and one of four colour themes (Classic, Midnight, Sunset, Forest). Each event gets its own QR code and email list.
 - **At the event**: click **Display QR** on the event to open `/display/?event=...` in a new tab — put that on the projector. Attendees scan it, land on `/join/?event=...`, and submit their email. Scanning twice is harmless — duplicates are quietly treated as "already joined."
 - **After the event**: click **Export emails (.txt)** to download every collected email for that event, one per line.
 

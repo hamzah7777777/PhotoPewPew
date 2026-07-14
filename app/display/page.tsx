@@ -35,24 +35,52 @@ function DisplayContent() {
   }
 
   const theme = getTheme(event.theme);
+  const hasBackground = Boolean(event.background_url);
 
   return (
     <main
-      className={`flex flex-1 flex-col items-center justify-center gap-10 p-10 text-center ${theme.page}`}
+      className={`flex flex-1 flex-col items-center justify-center gap-10 p-10 text-center ${
+        hasBackground ? "bg-neutral-950" : theme.page
+      }`}
+      style={
+        hasBackground
+          ? {
+              backgroundImage: `url(${event.background_url})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }
+          : undefined
+      }
     >
       <div>
         <p
-          className={`text-4xl font-semibold tracking-tight ${theme.title}`}
+          className={`text-4xl font-semibold tracking-tight ${
+            hasBackground
+              ? "text-white [text-shadow:0_2px_16px_rgb(0_0_0/0.8)]"
+              : theme.title
+          }`}
         >
           {event.name}
         </p>
         {event.subtitle && (
-          <p className={`mt-2 text-xl ${theme.subtitle}`}>{event.subtitle}</p>
+          <p
+            className={`mt-2 text-xl ${
+              hasBackground
+                ? "text-white/90 [text-shadow:0_1px_10px_rgb(0_0_0/0.8)]"
+                : theme.subtitle
+            }`}
+          >
+            {event.subtitle}
+          </p>
         )}
       </div>
 
       {joinUrl && (
-        <div className={`rounded-2xl p-6 ${theme.qrCard}`}>
+        <div
+          className={`rounded-2xl p-6 ${
+            hasBackground ? "bg-white shadow-2xl" : theme.qrCard
+          }`}
+        >
           <QRCodeSVG
             value={joinUrl}
             size={360}
@@ -63,7 +91,13 @@ function DisplayContent() {
       )}
 
       {event.subtext && (
-        <p className={`text-2xl font-medium ${theme.subtext}`}>
+        <p
+          className={`text-2xl font-medium ${
+            hasBackground
+              ? "text-white [text-shadow:0_2px_16px_rgb(0_0_0/0.8)]"
+              : theme.subtext
+          }`}
+        >
           {event.subtext}
         </p>
       )}
