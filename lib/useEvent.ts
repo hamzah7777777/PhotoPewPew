@@ -12,7 +12,7 @@ export function useEvent(slug: string) {
     }
     supabase
       .from("events")
-      .select("id, slug, name, created_at")
+      .select("id, slug, name, subtitle, subtext, theme, created_at")
       .eq("slug", slug)
       .maybeSingle()
       .then(({ data }) => setEvent(data));

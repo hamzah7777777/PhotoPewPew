@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { QRCodeSVG } from "qrcode.react";
 import { useEvent } from "@/lib/useEvent";
-import { CLUB } from "@/lib/club";
+import { getTheme } from "@/lib/themes";
 
 export default function DisplayPage() {
   return (
@@ -34,26 +34,39 @@ function DisplayContent() {
     );
   }
 
+  const theme = getTheme(event.theme);
+
   return (
-    <main className="flex flex-1 flex-col items-center justify-center gap-10 bg-white p-10 text-center">
+    <main
+      className={`flex flex-1 flex-col items-center justify-center gap-10 p-10 text-center ${theme.page}`}
+    >
       <div>
-        <p className="text-lg font-semibold tracking-tight text-blue-900">
-          {CLUB.name}
-        </p>
-        <p className="mt-1 text-2xl font-semibold text-neutral-900">
+        <p
+          className={`text-4xl font-semibold tracking-tight ${theme.title}`}
+        >
           {event.name}
         </p>
+        {event.subtitle && (
+          <p className={`mt-2 text-xl ${theme.subtitle}`}>{event.subtitle}</p>
+        )}
       </div>
 
       {joinUrl && (
-        <div className="rounded-2xl border border-neutral-200 bg-white p-6 shadow-lg">
-          <QRCodeSVG value={joinUrl} size={360} />
+        <div className={`rounded-2xl p-6 ${theme.qrCard}`}>
+          <QRCodeSVG
+            value={joinUrl}
+            size={360}
+            fgColor={theme.qrFg}
+            bgColor={theme.qrBg}
+          />
         </div>
       )}
 
-      <p className="text-2xl font-medium text-neutral-700">
-        Scan to join our mailing list
-      </p>
+      {event.subtext && (
+        <p className={`text-2xl font-medium ${theme.subtext}`}>
+          {event.subtext}
+        </p>
+      )}
     </main>
   );
 }

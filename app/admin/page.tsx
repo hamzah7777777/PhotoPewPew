@@ -5,6 +5,7 @@ import type { Session } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 import { makeSlug } from "@/lib/slug";
 import { downloadTextFile } from "@/lib/download";
+import { THEMES, type ThemeId } from "@/lib/themes";
 import {
   Brand,
   Button,
@@ -161,8 +162,13 @@ function AdminDashboard() {
   );
 }
 
+const DEFAULT_SUBTEXT = "Scan to join our mailing list";
+
 function CreateEventForm({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState("");
+  const [subtitle, setSubtitle] = useState("");
+  const [subtext, setSubtext] = useState(DEFAULT_SUBTEXT);
+  const [theme, setTheme] = useState<ThemeId>("classic");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -173,11 +179,17 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
     const { error } = await supabase.from("events").insert({
       slug: makeSlug(name),
       name,
+      subtitle: subtitle.trim(),
+      subtext: subtext.trim(),
+      theme,
     });
     if (error) {
       setError(error.message);
     } else {
       setName("");
+      setSubtitle("");
+      setSubtext(DEFAULT_SUBTEXT);
+      setTheme("classic");
       onCreated();
     }
     setSubmitting(false);
@@ -186,9 +198,9 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
   return (
     <Card>
       <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-        <h2 className="font-medium text-neutral-900">New event</h2>
+        <h2 className="font-medium text-neutral-900">New QR code</h2>
         <div className="flex flex-col gap-1.5">
-          <FieldLabel>Event name</FieldLabel>
+          <FieldLabel>Title</FieldLabel>
           <Input
             placeholder="e.g. 9 July 2026 Meeting"
             required
@@ -196,9 +208,46 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
             onChange={(e) => setName(e.target.value)}
           />
         </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Subtitle (optional)</FieldLabel>
+          <Input
+            placeholder="e.g. Guest open evening"
+            value={subtitle}
+            onChange={(e) => setSubtitle(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Sub text (optional, shown under the QR code)</FieldLabel>
+          <Input
+            value={subtext}
+            onChange={(e) => setSubtext(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <FieldLabel>Theme</FieldLabel>
+          <div className="flex flex-wrap gap-2">
+            {THEMES.map((option) => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => setTheme(option.id)}
+                className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition ${
+                  theme === option.id
+                    ? "border-neutral-900 ring-2 ring-neutral-200"
+                    : "border-neutral-200 hover:bg-neutral-50"
+                }`}
+              >
+                <span
+                  className={`h-5 w-5 rounded-full border border-neutral-300 ${option.swatch}`}
+                />
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
         {error && <ErrorText>{error}</ErrorText>}
         <Button type="submit" disabled={submitting} className="self-start">
-          {submitting ? "Creating..." : "Create event"}
+          {submitting ? "Creating..." : "Create QR code"}
         </Button>
       </form>
     </Card>

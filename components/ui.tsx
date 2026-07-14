@@ -107,7 +107,7 @@ export function Brand({ size = "sm" }: { size?: "sm" | "lg" }) {
         size === "sm" ? "text-sm" : "text-2xl",
       )}
     >
-      HSBC 8CS <span className="text-blue-900">Toastmasters</span>
+      HSBC <span className="text-red-600">IRL</span>
     </span>
   );
 }
