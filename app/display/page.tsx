@@ -114,14 +114,23 @@ function DisplayContent() {
 // The display page styled as a social-media post: the QR code is the
 // "photo", with a handle header, action row, and caption around it.
 function SocialPost({ event, joinUrl }: { event: Event; joinUrl: string }) {
-  const handle = SITE_NAME.toLowerCase()
-    .replace(/[^a-z0-9]+/g, "_")
-    .replace(/^_+|_+$/g, "");
-  const initials = SITE_NAME.split(/\s+/)
+  // Poster's name falls back to a handle derived from the site name.
+  const handle =
+    event.poster_name.trim() ||
+    SITE_NAME.toLowerCase()
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+  const initials = (event.poster_name.trim() || SITE_NAME)
+    .split(/\s+/)
     .map((word) => word[0])
     .join("")
     .slice(0, 2)
     .toUpperCase();
+  const location = event.location.trim() || event.subtitle;
+  const likesLine =
+    event.likes > 0
+      ? `${event.likes.toLocaleString()} ${event.likes === 1 ? "like" : "likes"}`
+      : "Liked by attendees and others";
 
   return (
     <main className="flex flex-1 items-center justify-center bg-[#fafafa] p-6">
@@ -129,19 +138,26 @@ function SocialPost({ event, joinUrl }: { event: Event; joinUrl: string }) {
         <div className="flex items-center gap-3 px-4 py-3">
           <div className="rounded-full bg-gradient-to-tr from-amber-400 via-rose-500 to-fuchsia-600 p-[2px]">
             <div className="rounded-full bg-white p-[2px]">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
-                {initials}
-              </div>
+              {event.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={event.avatar_url}
+                  alt=""
+                  className="h-9 w-9 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-900 text-xs font-semibold text-white">
+                  {initials}
+                </div>
+              )}
             </div>
           </div>
           <div className="min-w-0 flex-1 leading-tight">
             <p className="truncate text-sm font-semibold text-neutral-900">
               {handle}
             </p>
-            {event.subtitle && (
-              <p className="truncate text-xs text-neutral-500">
-                {event.subtitle}
-              </p>
+            {location && (
+              <p className="truncate text-xs text-neutral-500">{location}</p>
             )}
           </div>
           <Icon label="More options">
@@ -175,9 +191,7 @@ function SocialPost({ event, joinUrl }: { event: Event; joinUrl: string }) {
         </div>
 
         <div className="flex flex-col gap-1 px-4 pb-4 pt-2 text-sm">
-          <p className="font-semibold text-neutral-900">
-            Liked by attendees and others
-          </p>
+          <p className="font-semibold text-neutral-900">{likesLine}</p>
           <p className="text-neutral-900">
             <span className="font-semibold">{handle}</span>{" "}
             <span className="font-semibold">{event.name}</span>

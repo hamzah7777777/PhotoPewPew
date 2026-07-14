@@ -6,6 +6,10 @@ export type Event = {
   subtext: string;
   theme: string;
   background_url: string;
+  poster_name: string;
+  location: string;
+  likes: number;
+  avatar_url: string;
   created_at: string;
 };
 

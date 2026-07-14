@@ -21,6 +21,7 @@ type EventRow = {
   slug: string;
   name: string;
   background_url: string;
+  avatar_url: string;
   created_at: string;
 };
 
@@ -109,7 +110,7 @@ function AdminDashboard() {
   async function loadEvents() {
     const { data } = await supabase
       .from("events")
-      .select("id, slug, name, background_url, created_at")
+      .select("id, slug, name, background_url, avatar_url, created_at")
       .order("created_at", { ascending: false });
     const list = data ?? [];
     setEvents(list);
@@ -170,65 +171,90 @@ function AdminDashboard() {
 
 const DEFAULT_SUBTEXT = "Scan to join our mailing list";
 
+// Compress an image and upload it to the backgrounds bucket, returning its
+// public URL. Throws on failure so the caller can surface an error.
+async function uploadImage(file: File, prefix: string): Promise<string> {
+  const upload = await compressImage(file, MAX_BACKGROUND_BYTES);
+  const ext = upload.name.split(".").pop()?.toLowerCase() || "jpg";
+  const path = `${prefix}-${Date.now()}.${ext}`;
+  const { error } = await supabase.storage
+    .from(BACKGROUNDS_BUCKET)
+    .upload(path, upload);
+  if (error) throw new Error(error.message);
+  return supabase.storage.from(BACKGROUNDS_BUCKET).getPublicUrl(path).data
+    .publicUrl;
+}
+
 function CreateEventForm({ onCreated }: { onCreated: () => void }) {
   const [name, setName] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [subtext, setSubtext] = useState(DEFAULT_SUBTEXT);
   const [theme, setTheme] = useState<ThemeId>("classic");
   const [background, setBackground] = useState<File | null>(null);
+  const [posterName, setPosterName] = useState("");
+  const [location, setLocation] = useState("");
+  const [likes, setLikes] = useState("");
+  const [avatar, setAvatar] = useState<File | null>(null);
   const [fileInputKey, setFileInputKey] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isSocial = theme === "social";
+
+  function resetForm() {
+    setName("");
+    setSubtitle("");
+    setSubtext(DEFAULT_SUBTEXT);
+    setTheme("classic");
+    setBackground(null);
+    setPosterName("");
+    setLocation("");
+    setLikes("");
+    setAvatar(null);
+    setFileInputKey((k) => k + 1);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
     setError(null);
 
+    const slug = makeSlug(name);
     let background_url = "";
-    if (background) {
-      let upload: File;
-      try {
-        upload = await compressImage(background, MAX_BACKGROUND_BYTES);
-      } catch {
-        setError(
-          "Could not process that image — please try a different file.",
-        );
-        setSubmitting(false);
-        return;
+    let avatar_url = "";
+    try {
+      if (background) {
+        background_url = await uploadImage(background, `bg-${slug}`);
       }
-      const ext = upload.name.split(".").pop()?.toLowerCase() || "jpg";
-      const path = `${makeSlug(name)}-${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
-        .from(BACKGROUNDS_BUCKET)
-        .upload(path, upload);
-      if (uploadError) {
-        setError(`Could not upload background image: ${uploadError.message}`);
-        setSubmitting(false);
-        return;
+      if (isSocial && avatar) {
+        avatar_url = await uploadImage(avatar, `avatar-${slug}`);
       }
-      background_url = supabase.storage
-        .from(BACKGROUNDS_BUCKET)
-        .getPublicUrl(path).data.publicUrl;
+    } catch (err) {
+      setError(
+        `Could not upload image: ${
+          err instanceof Error ? err.message : "please try a different file."
+        }`,
+      );
+      setSubmitting(false);
+      return;
     }
 
     const { error } = await supabase.from("events").insert({
-      slug: makeSlug(name),
+      slug,
       name,
       subtitle: subtitle.trim(),
       subtext: subtext.trim(),
       theme,
       background_url,
+      poster_name: posterName.trim(),
+      location: location.trim(),
+      likes: Math.max(0, Math.floor(Number(likes) || 0)),
+      avatar_url,
     });
     if (error) {
       setError(error.message);
     } else {
-      setName("");
-      setSubtitle("");
-      setSubtext(DEFAULT_SUBTEXT);
-      setTheme("classic");
-      setBackground(null);
-      setFileInputKey((k) => k + 1);
+      resetForm();
       onCreated();
     }
     setSubmitting(false);
@@ -306,6 +332,59 @@ function CreateEventForm({ onCreated }: { onCreated: () => void }) {
             ))}
           </div>
         </div>
+
+        {isSocial && (
+          <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
+            <p className="text-xs font-medium text-neutral-500">Post details</p>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Profile photo (optional PNG or JPG)</FieldLabel>
+              <Input
+                key={`avatar-${fileInputKey}`}
+                type="file"
+                accept="image/png,image/jpeg"
+                className="file:mr-3 file:rounded-md file:border-0 file:bg-neutral-100 file:px-3 file:py-1 file:text-sm file:font-medium file:text-neutral-700"
+                onChange={(e) => {
+                  const file = e.target.files?.[0] ?? null;
+                  if (file && !ALLOWED_BACKGROUND_TYPES.includes(file.type)) {
+                    setError("Profile photo must be a PNG or JPG file.");
+                    setAvatar(null);
+                    setFileInputKey((k) => k + 1);
+                    return;
+                  }
+                  setError(null);
+                  setAvatar(file);
+                }}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Poster&apos;s name</FieldLabel>
+              <Input
+                placeholder="e.g. hsbc_irl"
+                value={posterName}
+                onChange={(e) => setPosterName(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Location</FieldLabel>
+              <Input
+                placeholder="e.g. 8 Canada Square, London"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <FieldLabel>Number of likes</FieldLabel>
+              <Input
+                type="number"
+                min={0}
+                placeholder="e.g. 142"
+                value={likes}
+                onChange={(e) => setLikes(e.target.value)}
+              />
+            </div>
+          </div>
+        )}
+
         {error && <ErrorText>{error}</ErrorText>}
         <Button type="submit" disabled={submitting} className="self-start">
           {submitting ? "Creating..." : "Create QR code"}
@@ -365,13 +444,16 @@ function EventCard({
       setDeleting(false);
       return;
     }
-    // Best-effort cleanup of the uploaded background image, if any.
+    // Best-effort cleanup of any uploaded images (background + avatar).
     const marker = `/${BACKGROUNDS_BUCKET}/`;
-    const markerIndex = event.background_url.indexOf(marker);
-    if (markerIndex !== -1) {
-      await supabase.storage
-        .from(BACKGROUNDS_BUCKET)
-        .remove([event.background_url.slice(markerIndex + marker.length)]);
+    const paths = [event.background_url, event.avatar_url]
+      .map((url) => {
+        const i = url.indexOf(marker);
+        return i === -1 ? null : url.slice(i + marker.length);
+      })
+      .filter((path): path is string => path !== null);
+    if (paths.length > 0) {
+      await supabase.storage.from(BACKGROUNDS_BUCKET).remove(paths);
     }
     onDeleted();
   }
